@@ -53,6 +53,7 @@
     "referral_code_placeholder": "Arkadaşınızdan gelen kodu girin",
     "your_referral_code": "Referans Linkiniz",
     "share_referral_code": "Bu linki arkadaşlarınızla paylaşın. Referans kodunuz otomatik olarak kullanılacaktır!",
+    "referral_earning_info": "Davet ettiğiniz her kullanıcının kazancından %5 komisyon kazanırsınız!",
     "alert_withdraw_request_submitted": "Para çekme talebiniz inceleme için gönderildi.",
     "withdrawal_requests": "Para Çekme Talepleri",
     "admin_wr_user": "Kullanıcı",

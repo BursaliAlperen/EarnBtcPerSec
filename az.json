@@ -53,6 +53,7 @@
     "referral_code_placeholder": "Dostunuzdan gələn kodu daxil edin",
     "your_referral_code": "Sizin Referral Linkiniz",
     "share_referral_code": "Bu linki dostlarınızla paylaşın. Onlar avtomatik olaraq sizin referral kodunuzu istifadə edəcəklər!",
+    "referral_earning_info": "Dəvət etdiyiniz hər bir istifadəçinin qazancından 5% komissiya qazanırsınız!",
     "alert_withdraw_request_submitted": "Çıxarma tələbiniz yoxlanılması üçün göndərildi.",
     "withdrawal_requests": "Çıxarma Tələbləri",
     "admin_wr_user": "İstifadəçi",
@@ -91,4 +92,3 @@
     "weekly_prize_timer_prefix": "Növbəti mükafat:",
     "weekly_prize_awarding": "Mükafatlar verilir..."
 }
-

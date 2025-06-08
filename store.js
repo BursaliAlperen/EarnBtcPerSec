@@ -29,7 +29,6 @@ function _save(immediate = false) {
         clearTimeout(saveTimeout);
         saveTimeout = null;
     }
-    DB.lastUpdated = Date.now(); // Always update timestamp on save
     if (immediate) {
         localStorage.setItem(DB_KEY, JSON.stringify(DB));
     } else {
@@ -50,7 +49,6 @@ function _load() {
             users: [],
             loggedInUserEmail: null,
             withdrawalRequests: [],
-            lastUpdated: Date.now(),
             lastReferralPrizeWeek: null
         };
     }
@@ -100,15 +98,35 @@ function processOfflineEarnings(totalSeconds, baseAmount) {
 
             if (earnableSeconds > 0) {
                 const amountForChunk = earnableSeconds * baseAmount;
+                const totalEarningForUser = amountForChunk * user.wallets.length;
+
                 user.wallets.forEach(wallet => {
                     wallet.balance += amountForChunk;
                 });
                 user.earningTimeLeft -= earnableSeconds;
 
                 user.earningsLog.push({
-                    amount: amountForChunk * user.wallets.length,
+                    amount: totalEarningForUser,
                     timestamp: simulatedTime.getTime()
                 });
+                
+                // --- Referral Commission Logic for Offline Earnings ---
+                if (user.referredBy) {
+                    const referrer = getUser(user.referredBy);
+                    if (referrer && referrer.wallets.length > 0) {
+                        const commissionAmount = totalEarningForUser * 0.05; // 5% commission
+                        const commissionPerWallet = commissionAmount / referrer.wallets.length;
+                        referrer.wallets.forEach(wallet => {
+                            wallet.balance += commissionPerWallet;
+                        });
+                        // Also log this for the referrer
+                        referrer.earningsLog.push({
+                            amount: commissionAmount,
+                            timestamp: simulatedTime.getTime(),
+                            type: 'referral'
+                        });
+                    }
+                }
             }
 
             secondsProcessed += secondsToProcessInChunk;
@@ -416,6 +434,8 @@ function _handleUserEarning(user, baseAmount) {
     }
 
     if (user.earningTimeLeft > 0 && user.wallets.length > 0) {
+        const totalEarningForUser = baseAmount * user.wallets.length;
+
         // User has time left and wallets to earn into
         user.wallets.forEach(wallet => {
             wallet.balance += baseAmount;
@@ -426,13 +446,34 @@ function _handleUserEarning(user, baseAmount) {
 
         // Add to earnings log
         user.earningsLog.push({
-            amount: baseAmount * user.wallets.length,
+            amount: totalEarningForUser,
             timestamp: Date.now()
         });
         
         // Prune old earnings logs
         const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         user.earningsLog = user.earningsLog.filter(e => e.timestamp > oneWeekAgo);
+
+        // --- Referral Commission Logic ---
+        if (user.referredBy) {
+            const referrer = getUser(user.referredBy);
+            // Check if referrer exists and has wallets to receive commission
+            if (referrer && referrer.wallets.length > 0) {
+                const commissionAmount = totalEarningForUser * 0.05; // 5% commission
+                const commissionPerWallet = commissionAmount / referrer.wallets.length;
+
+                referrer.wallets.forEach(wallet => {
+                    wallet.balance += commissionPerWallet;
+                });
+                
+                // Also log this as an earning for the referrer
+                referrer.earningsLog.push({
+                    amount: commissionAmount,
+                    timestamp: Date.now(),
+                    type: 'referral' // Mark as referral earning
+                });
+            }
+        }
     }
 }
 
