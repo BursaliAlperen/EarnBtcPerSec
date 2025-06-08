@@ -1,6 +1,6 @@
 {
-    "app_title": "EarnBTCPerMin – Advanced BTC Wallet Admin Panel",
-    "app_title_short": "EarnBTCPerMin",
+    "app_title": "EarnBtcPerSec – Advanced BTC Wallet Admin Panel",
+    "app_title_short": "EarnBtcPerSec",
     "welcome": "Welcome",
     "logout_btn": "Logout",
     "login_title": "Login",
@@ -51,8 +51,8 @@
     "alert_user_no_wallets": "User has no wallets to edit.",
     "referral_code_label": "Referral Code (Optional)",
     "referral_code_placeholder": "Enter code from a friend",
-    "your_referral_code": "Your Referral Code",
-    "share_referral_code": "Share this code with your friends and get a bonus for each signup!",
+    "your_referral_code": "Your Referral Link",
+    "share_referral_code": "Share this link with your friends. They'll use your referral code automatically!",
     "alert_withdraw_request_submitted": "Your withdrawal request has been submitted for review.",
     "withdrawal_requests": "Withdrawal Requests",
     "admin_wr_user": "User",
@@ -64,8 +64,8 @@
     "deny_btn": "Deny",
     "no_withdrawal_requests": "No withdrawal requests found.",
     "earning_limit_title": "Daily Earning Time",
-    "earning_limit_desc": "You can earn for up to 6 hours each day. Your limit resets daily at 1 AM.",
-    "earning_limit_time_up": "Your earning time for today is up. It will reset at 1 AM.",
+    "earning_limit_desc": "You can earn for up to 6 hours each day. Your limit resets daily at midnight (00:00).",
+    "earning_limit_time_up": "Your earning time for today is up. It will reset at midnight (00:00).",
     "admin_wr_status": "Status",
     "admin_password_modal_title": "Admin Access Verification",
     "admin_password_prompt": "Please enter your password to access the admin panel.",
@@ -80,6 +80,14 @@
     "no_online_users": "No users currently online.",
     "seconds_ago": "seconds ago",
     "just_now": "Just now",
-    "about_a_minute_ago": "About a minute ago"
+    "about_a_minute_ago": "About a minute ago",
+    "leaderboard_top_earners": "Top Earners",
+    "leaderboard_top_withdrawers": "Top Withdrawers",
+    "no_earners_yet": "No earners yet.",
+    "no_withdrawals_yet": "No withdrawals yet.",
+    "leaderboard_top_referrers": "Top Referrers (Weekly)",
+    "no_referrers_yet": "No referrals this week.",
+    "referrals_badge": "referrals",
+    "weekly_prize_timer_prefix": "Next prize in",
+    "weekly_prize_awarding": "Awarding prizes..."
 }
-

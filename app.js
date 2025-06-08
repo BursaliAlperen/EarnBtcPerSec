@@ -4,6 +4,51 @@ import * as lang from './lang.js';
 let balanceChart = null;
 const EARNING_INTERVAL = 1000; // 1 second
 let adminPasswordModal = null;
+let audioContext;
+const soundCache = {};
+
+// --- Sound ---
+async function playSound(url) {
+    if (!audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.error("Web Audio API is not supported in this browser");
+            return;
+        }
+    }
+    if (audioContext.state === 'suspended') {
+        try {
+            await audioContext.resume();
+        } catch(e) {
+            console.error("Could not resume audio context", e);
+            return;
+        }
+    }
+
+    if (soundCache[url]) {
+        const source = audioContext.createBufferSource();
+        source.buffer = soundCache[url];
+        source.connect(audioContext.destination);
+        source.start(0);
+        return;
+    }
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Could not fetch sound: ${url}`);
+        const arrayBuffer = await response.arrayBuffer();
+        audioContext.decodeAudioData(arrayBuffer, (buffer) => {
+            soundCache[url] = buffer;
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+        }, (e) => { console.error(`Error decoding audio data for ${url}`, e); });
+    } catch (error) {
+        console.error(`Error playing sound: ${url}`, error);
+    }
+}
 
 // --- Page Navigation ---
 function showPage(pageId) {
@@ -26,9 +71,9 @@ function renderDashboard() {
 
     // Update stats
     const { total, today, weekly } = calculateEarnings(user);
-    document.getElementById('total-earned').textContent = `${total.toFixed(9)} BTC`;
-    document.getElementById('today-earned').textContent = `${today.toFixed(9)} BTC`;
-    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(9)} BTC`;
+    document.getElementById('total-earned').textContent = `${total.toFixed(10)} BTC`;
+    document.getElementById('today-earned').textContent = `${today.toFixed(10)} BTC`;
+    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(10)} BTC`;
 
     // Update Earning Time Display
     updateEarningTimeDisplay(user);
@@ -49,7 +94,7 @@ function renderDashboard() {
                     <span class="wallet-address">${wallet.address}</span>
                 </div>
                 <div class="d-flex align-items-center">
-                    <span class="wallet-balance me-3">${wallet.balance.toFixed(9)} BTC</span>
+                    <span class="wallet-balance me-3">${wallet.balance.toFixed(10)} BTC</span>
                     <div class="wallet-actions">
                         <button class="btn btn-sm btn-info withdraw-btn" data-address="${wallet.address}" data-i18n="withdraw_btn" data-i18n-title="withdraw_btn_title">Withdraw</button>
                         <button class="btn btn-sm btn-danger delete-wallet-btn" data-address="${wallet.address}"><i class="bi bi-trash"></i></button>
@@ -60,14 +105,16 @@ function renderDashboard() {
         });
     }
 
-    // Update referral code display
-    const refCodeInput = document.getElementById('referral-code-display');
-    if (refCodeInput) {
-        refCodeInput.value = user.referralCode || '';
+    // Update referral link display
+    const refLinkInput = document.getElementById('referral-link-display');
+    if (refLinkInput) {
+        const baseUrl = window.location.href.split('?')[0].split('#')[0];
+        refLinkInput.value = `${baseUrl}?ref=${user.referralCode || ''}`;
     }
 
     // Update chart
     renderBalanceChart(user.wallets);
+    renderLeaderboards();
     lang.translatePage();
 }
 
@@ -111,6 +158,80 @@ function renderBalanceChart(wallets) {
     });
 }
 
+function renderLeaderboards() {
+    const topEarners = store.getTopEarners(10);
+    const topWithdrawers = store.getTopWithdrawers(10);
+    const topReferrers = store.getTopReferrers(5);
+
+    const earnersListEl = document.getElementById('top-earners-list');
+    const withdrawersListEl = document.getElementById('top-withdrawers-list');
+    const referrersListEl = document.getElementById('top-referrers-list');
+
+    // Render Top Earners
+    if (earnersListEl) {
+        earnersListEl.innerHTML = '';
+        if (topEarners.length === 0) {
+            earnersListEl.innerHTML = `<div class="list-group-item text-muted" data-i18n="no_earners_yet">${lang.get('no_earners_yet')}</div>`;
+        } else {
+            topEarners.forEach((user, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-group-item d-flex justify-content-between align-items-center';
+                el.innerHTML = `
+                    <div>
+                        <span class="fw-bold me-2">${index + 1}.</span>
+                        <span>${user.username}</span>
+                    </div>
+                    <span class="badge bg-warning text-dark rounded-pill">${user.totalEarned.toFixed(10)} BTC</span>
+                `;
+                earnersListEl.appendChild(el);
+            });
+        }
+    }
+
+
+    // Render Top Withdrawers
+    if (withdrawersListEl) {
+        withdrawersListEl.innerHTML = '';
+        if (topWithdrawers.length === 0) {
+            withdrawersListEl.innerHTML = `<div class="list-group-item text-muted" data-i18n="no_withdrawals_yet">${lang.get('no_withdrawals_yet')}</div>`;
+        } else {
+            topWithdrawers.forEach((user, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-group-item d-flex justify-content-between align-items-center';
+                el.innerHTML = `
+                     <div>
+                        <span class="fw-bold me-2">${index + 1}.</span>
+                        <span>${user.username}</span>
+                    </div>
+                    <span class="badge bg-success rounded-pill">${user.totalWithdrawn.toFixed(10)} BTC</span>
+                `;
+                withdrawersListEl.appendChild(el);
+            });
+        }
+    }
+    
+    // Render Top Referrers
+    if (referrersListEl) {
+        referrersListEl.innerHTML = '';
+        if (topReferrers.length === 0) {
+            referrersListEl.innerHTML = `<div class="list-group-item text-muted" data-i18n="no_referrers_yet">${lang.get('no_referrers_yet')}</div>`;
+        } else {
+            topReferrers.forEach((user, index) => {
+                const el = document.createElement('div');
+                el.className = 'list-group-item d-flex justify-content-between align-items-center';
+                el.innerHTML = `
+                     <div>
+                        <span class="fw-bold me-2">${index + 1}.</span>
+                        <span>${user.username}</span>
+                    </div>
+                    <span class="badge bg-info rounded-pill">${user.referralCount} ${lang.get('referrals_badge')}</span>
+                `;
+                referrersListEl.appendChild(el);
+            });
+        }
+    }
+}
+
 function updateEarningTimeDisplay(user) {
     const timeLeft = user.earningTimeLeft || 0;
     const totalTime = 6 * 60 * 60;
@@ -139,15 +260,39 @@ function updateEarningTimeDisplay(user) {
     }
 }
 
+function updateWeeklyPrizeTimer() {
+    const timerEl = document.getElementById('weekly-prize-timer');
+    if (!timerEl) return;
+
+    const now = new Date();
+    const [year, week] = store.getWeekNumber(now);
+    const weekStart = store.getDateOfISOWeek(week, year);
+    // The prize is for the *previous* week, so the timer should count down to the *end* of the *current* week.
+    const nextWeekStart = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const diff = nextWeekStart.getTime() - now.getTime();
+    if (diff <= 0) {
+        timerEl.textContent = lang.get('weekly_prize_awarding');
+        return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    timerEl.textContent = `${lang.get('weekly_prize_timer_prefix')} ${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
 function updateDashboardDisplay() {
     const user = store.getLoggedInUser();
     if (!user) return;
 
     // Update stats
     const { total, today, weekly } = calculateEarnings(user);
-    document.getElementById('total-earned').textContent = `${total.toFixed(9)} BTC`;
-    document.getElementById('today-earned').textContent = `${today.toFixed(9)} BTC`;
-    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(9)} BTC`;
+    document.getElementById('total-earned').textContent = `${total.toFixed(10)} BTC`;
+    document.getElementById('today-earned').textContent = `${today.toFixed(10)} BTC`;
+    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(10)} BTC`;
 
     // Update wallet balances
     user.wallets.forEach(wallet => {
@@ -155,7 +300,7 @@ function updateDashboardDisplay() {
         if (walletItemEl) {
             const balanceEl = walletItemEl.querySelector('.wallet-balance');
             if(balanceEl) {
-                balanceEl.textContent = `${wallet.balance.toFixed(9)} BTC`;
+                balanceEl.textContent = `${wallet.balance.toFixed(10)} BTC`;
             }
         }
     });
@@ -228,7 +373,7 @@ function renderUserList() {
             <td>${user.email}</td>
             <td>${user.username}</td>
             <td>${user.wallets.length}</td>
-            <td>${totalBalance.toFixed(9)} BTC</td>
+            <td>${totalBalance.toFixed(10)} BTC</td>
             <td>
                 <button class="btn btn-sm btn-primary edit-user-btn" data-email="${user.email}" data-i18n="edit_btn">Edit</button>
                 <button class="btn btn-sm btn-danger delete-user-btn" data-email="${user.email}" data-i18n="delete_btn">Delete</button>
@@ -280,7 +425,7 @@ function renderWithdrawalRequests() {
         tr.innerHTML = `
             <td>${req.userEmail}</td>
             <td class="font-monospace small">${req.walletAddress}</td>
-            <td>${req.amount.toFixed(9)} BTC</td>
+            <td>${req.amount.toFixed(10)} BTC</td>
             <td>${new Date(req.timestamp).toLocaleString()}</td>
             <td>${statusBadge}</td>
             <td>${actions}</td>
@@ -314,12 +459,13 @@ function setupEventListeners() {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('register-form').addEventListener('submit', handleRegister);
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
-    document.getElementById('show-register').addEventListener('click', () => showPage('register-page'));
-    document.getElementById('show-login').addEventListener('click', () => showPage('login-page'));
+    document.getElementById('show-register').addEventListener('click', () => { playSound('click.mp3'); showPage('register-page'); });
+    document.getElementById('show-login').addEventListener('click', () => { playSound('click.mp3'); showPage('login-page'); });
 
     // Language
-    document.getElementById('lang-en').addEventListener('click', () => lang.setLang('en'));
-    document.getElementById('lang-tr').addEventListener('click', () => lang.setLang('tr'));
+    document.getElementById('lang-en').addEventListener('click', () => { playSound('click.mp3'); lang.setLang('en'); });
+    document.getElementById('lang-tr').addEventListener('click', () => { playSound('click.mp3'); lang.setLang('tr'); });
+    document.getElementById('lang-az').addEventListener('click', () => { playSound('click.mp3'); lang.setLang('az'); });
     
     // Dashboard
     document.getElementById('dashboard-page').addEventListener('click', handleDashboardActions);
@@ -329,6 +475,7 @@ function setupEventListeners() {
     // Admin
     document.getElementById('admin-panel-btn').addEventListener('click', handleAdminPanelClick);
     document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+        playSound('click.mp3');
         showPage('dashboard-page');
     });
     document.getElementById('user-list-tbody').addEventListener('click', handleAdminUserActions);
@@ -337,7 +484,7 @@ function setupEventListeners() {
     
     // Admin password modal
     document.getElementById('admin-password-form').addEventListener('submit', handleAdminPasswordVerify);
-    document.getElementById('cancel-admin-access-btn').addEventListener('click', () => adminPasswordModal.hide());
+    document.getElementById('cancel-admin-access-btn').addEventListener('click', () => { playSound('click.mp3'); adminPasswordModal.hide(); });
 }
 
 function handleLogin(e) {
@@ -346,9 +493,11 @@ function handleLogin(e) {
     const password = document.getElementById('login-password').value;
 
     if (store.login(email, password)) {
+        playSound('success.mp3');
         store.updateUserActivity(email);
         initializeAppState();
     } else {
+        playSound('error.mp3');
         alert(lang.get('alert_login_failed'));
     }
 }
@@ -361,14 +510,17 @@ function handleRegister(e) {
     const referralCode = document.getElementById('register-referral').value;
     
     if (store.addUser(username, email, password, referralCode)) {
+        playSound('success.mp3');
         store.login(email, password);
         initializeAppState();
     } else {
+        playSound('error.mp3');
         alert(lang.get('alert_registration_failed'));
     }
 }
 
 function handleLogout() {
+    playSound('click.mp3');
     store.logout();
     initializeAppState();
 }
@@ -379,6 +531,7 @@ function handleAddWallet(e) {
     const user = store.getLoggedInUser();
     if (user && address) {
         if (store.addWallet(user.email, address)) {
+            playSound('success.mp3');
             renderDashboard();
             const modal = bootstrap.Modal.getInstance(document.getElementById('add-wallet-modal'));
             modal.hide();
@@ -397,6 +550,7 @@ function handleWalletActions(e) {
         const button = e.target.closest('.delete-wallet-btn');
         const address = button.dataset.address;
         if (confirm(lang.get('alert_confirm_delete_wallet'))) {
+            playSound('delete.mp3');
             store.deleteWallet(user.email, address);
             renderDashboard();
         }
@@ -407,6 +561,7 @@ function handleWalletActions(e) {
         const wallet = user.wallets.find(w => w.address === address);
         if (wallet.balance >= 0.00001) {
             if (store.createWithdrawalRequest(user.email, address)) {
+                playSound('withdraw.mp3');
                 alert(lang.get('alert_withdraw_request_submitted'));
                 renderDashboard();
             }
@@ -417,12 +572,13 @@ function handleWalletActions(e) {
 }
 
 function handleDashboardActions(e) {
-    const target = e.target.closest('#copy-referral-btn');
+    const target = e.target.closest('#copy-referral-link-btn');
     if (target) {
-        const refCodeInput = document.getElementById('referral-code-display');
-        refCodeInput.select();
-        refCodeInput.setSelectionRange(0, 99999); // For mobile devices
-        navigator.clipboard.writeText(refCodeInput.value);
+        const refLinkInput = document.getElementById('referral-link-display');
+        refLinkInput.select();
+        refLinkInput.setSelectionRange(0, 99999); // For mobile devices
+        navigator.clipboard.writeText(refLinkInput.value);
+        playSound('copy.mp3');
 
         const originalIcon = target.innerHTML;
         target.innerHTML = `<i class="bi bi-check-lg"></i>`;
@@ -438,6 +594,7 @@ function handleAdminUserActions(e) {
 
     if (target.classList.contains('delete-user-btn')) {
         if (confirm(`${lang.get('alert_confirm_delete_user')} ${email}?`)) {
+            playSound('delete.mp3');
             store.deleteUser(email);
             renderAdminPanel();
         }
@@ -452,9 +609,10 @@ function handleAdminUserActions(e) {
             document.getElementById('edit-wallet-address').value = wallet.address;
             document.getElementById('edit-user-email-display').textContent = user.email;
             document.getElementById('edit-wallet-address-display').textContent = wallet.address;
-            document.getElementById('edit-wallet-balance').value = wallet.balance.toFixed(9);
+            document.getElementById('edit-wallet-balance').value = wallet.balance.toFixed(10);
             const modal = new bootstrap.Modal(document.getElementById('edit-user-modal'));
             modal.show();
+            playSound('click.mp3');
         } else {
             alert(lang.get('alert_user_no_wallets'));
         }
@@ -467,11 +625,13 @@ function handleWithdrawalRequestActions(e) {
     if (!requestId) return;
 
     if (target.classList.contains('approve-wr-btn')) {
+        playSound('success.mp3');
         store.processWithdrawalRequest(requestId, 'approved');
         renderAdminPanel(); // Re-render to update the list
     }
 
     if (target.classList.contains('deny-wr-btn')) {
+        playSound('delete.mp3');
         store.processWithdrawalRequest(requestId, 'denied');
         renderAdminPanel(); // Re-render
     }
@@ -485,6 +645,7 @@ function handleEditUserSubmit(e) {
     
     if (!isNaN(newBalance)) {
         store.updateBalance(email, address, newBalance);
+        playSound('success.mp3');
         renderAdminPanel();
         const modal = bootstrap.Modal.getInstance(document.getElementById('edit-user-modal'));
         modal.hide();
@@ -492,6 +653,7 @@ function handleEditUserSubmit(e) {
 }
 
 function handleAdminPanelClick() {
+    playSound('click.mp3');
     adminPasswordModal.show();
 }
 
@@ -502,11 +664,13 @@ function handleAdminPasswordVerify(e) {
     const user = store.getLoggedInUser();
 
     if (user && user.password === password) {
+        playSound('success.mp3');
         adminPasswordModal.hide();
         passwordInput.value = ''; // Clear password field
         renderAdminPanel();
         showPage('admin-page');
     } else {
+        playSound('error.mp3');
         alert(lang.get('alert_admin_password_incorrect'));
         passwordInput.select();
     }
@@ -515,7 +679,7 @@ function handleAdminPasswordVerify(e) {
 // --- Earning Mechanism ---
 function startEarningCycle() {
     setInterval(() => {
-        store.processEarnings(0.000000001);
+        store.processEarnings(0.0000000001);
         const loggedInUser = store.getLoggedInUser();
         if (loggedInUser) {
             store.updateUserActivity(loggedInUser.email);
@@ -524,6 +688,7 @@ function startEarningCycle() {
                 updateDashboardDisplay();
             }
         }
+        updateWeeklyPrizeTimer();
     }, EARNING_INTERVAL);
 }
 
@@ -561,6 +726,17 @@ function initializeAppState() {
 document.addEventListener('DOMContentLoaded', async () => {
     store.init();
     await lang.init();
+
+    // Handle referral link
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+        const referralInput = document.getElementById('register-referral');
+        if (referralInput) {
+            referralInput.value = refCode;
+        }
+    }
+
     adminPasswordModal = new bootstrap.Modal(document.getElementById('admin-password-modal'));
     setupEventListeners();
     initializeAppState();
