@@ -7,6 +7,7 @@ function _save(immediate = false) {
         clearTimeout(saveTimeout);
         saveTimeout = null;
     }
+    DB.lastUpdated = Date.now(); // Always update timestamp on save
     if (immediate) {
         localStorage.setItem(DB_KEY, JSON.stringify(DB));
     } else {
@@ -26,13 +27,91 @@ function _load() {
         DB = {
             users: [],
             loggedInUserEmail: null,
-            withdrawalRequests: []
+            withdrawalRequests: [],
+            lastUpdated: Date.now()
         };
     }
 }
 
+function processOfflineEarnings(totalSeconds, baseAmount) {
+    DB.users.forEach(user => {
+        if (user.isAdmin) {
+            if (user.wallets.length > 0) {
+                const totalEarned = totalSeconds * baseAmount;
+                user.wallets.forEach(wallet => {
+                    wallet.balance += totalEarned;
+                });
+            }
+            return; // next user
+        }
+
+        if (user.wallets.length === 0) return;
+
+        let secondsProcessed = 0;
+        let simulatedTime = new Date(DB.lastUpdated); // Start from the last update time
+
+        while (secondsProcessed < totalSeconds) {
+            // Find the last reset time relative to the current simulation time
+            let lastResetTime = new Date(simulatedTime);
+            lastResetTime.setHours(1, 0, 0, 0);
+            if (simulatedTime.getTime() < lastResetTime.getTime()) {
+                lastResetTime.setDate(lastResetTime.getDate() - 1);
+            }
+
+            // Check if user needs a reset for this simulation step
+            if (!user.earningTimeResetAt || user.earningTimeResetAt < lastResetTime.getTime()) {
+                user.earningTimeLeft = 6 * 60 * 60;
+                user.earningTimeResetAt = lastResetTime.getTime();
+            }
+
+            // Find time until next reset from simulationTime
+            let nextResetTime = new Date(lastResetTime);
+            nextResetTime.setDate(nextResetTime.getDate() + 1);
+            const secondsToNextReset = Math.max(1, Math.floor((nextResetTime.getTime() - simulatedTime.getTime()) / 1000));
+
+            const secondsRemainingInOfflinePeriod = totalSeconds - secondsProcessed;
+            const secondsToProcessInChunk = Math.min(secondsToNextReset, secondsRemainingInOfflinePeriod);
+            
+            if (secondsToProcessInChunk <= 0) { // Safety break
+                break;
+            }
+
+            const earnableSeconds = Math.min(secondsToProcessInChunk, user.earningTimeLeft || 0);
+
+            if (earnableSeconds > 0) {
+                const amountForChunk = earnableSeconds * baseAmount;
+                user.wallets.forEach(wallet => {
+                    wallet.balance += amountForChunk;
+                });
+                user.earningTimeLeft -= earnableSeconds;
+
+                user.earningsLog.push({
+                    amount: amountForChunk * user.wallets.length,
+                    timestamp: simulatedTime.getTime()
+                });
+            }
+
+            secondsProcessed += secondsToProcessInChunk;
+            simulatedTime.setSeconds(simulatedTime.getSeconds() + secondsToProcessInChunk);
+        }
+        
+        const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        user.earningsLog = user.earningsLog.filter(e => e.timestamp > oneWeekAgo);
+    });
+}
+
 export function init() {
     _load();
+
+    // Catch up on offline earnings
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - (DB.lastUpdated || now)) / 1000);
+
+    if (elapsedSeconds > 1) { // Only catch up if more than a second has passed
+        console.log(`Catching up on ${elapsedSeconds} seconds of offline time.`);
+        processOfflineEarnings(elapsedSeconds, 0.000000001);
+    }
+    
     // Create Super Admin if not exists
     if (!getUser('superadmin@example.com')) {
         DB.users.push({
