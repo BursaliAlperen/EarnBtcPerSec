@@ -62,5 +62,24 @@
     "admin_wr_actions": "Actions",
     "approve_btn": "Approve",
     "deny_btn": "Deny",
-    "no_pending_requests": "No pending withdrawal requests."
+    "no_withdrawal_requests": "No withdrawal requests found.",
+    "earning_limit_title": "Daily Earning Time",
+    "earning_limit_desc": "You can earn for up to 6 hours each day. Your limit resets daily at 1 AM.",
+    "earning_limit_time_up": "Your earning time for today is up. It will reset at 1 AM.",
+    "admin_wr_status": "Status",
+    "admin_password_modal_title": "Admin Access Verification",
+    "admin_password_prompt": "Please enter your password to access the admin panel.",
+    "verify_btn": "Verify",
+    "cancel_btn": "Cancel",
+    "alert_admin_password_incorrect": "Incorrect password. Access denied.",
+    "status_pending": "Pending",
+    "status_approved": "Approved",
+    "status_denied": "Denied",
+    "online_users_title": "Online Users",
+    "admin_online_last_seen": "Last Seen",
+    "no_online_users": "No users currently online.",
+    "seconds_ago": "seconds ago",
+    "just_now": "Just now",
+    "about_a_minute_ago": "About a minute ago"
 }
+

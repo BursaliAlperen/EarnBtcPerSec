@@ -2,7 +2,8 @@ import * as store from './store.js';
 import * as lang from './lang.js';
 
 let balanceChart = null;
-const EARNING_INTERVAL = 60000; // 60 seconds
+const EARNING_INTERVAL = 1000; // 1 second
+let adminPasswordModal = null;
 
 // --- Page Navigation ---
 function showPage(pageId) {
@@ -25,9 +26,12 @@ function renderDashboard() {
 
     // Update stats
     const { total, today, weekly } = calculateEarnings(user);
-    document.getElementById('total-earned').textContent = `${total.toFixed(8)} BTC`;
-    document.getElementById('today-earned').textContent = `${today.toFixed(8)} BTC`;
-    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(8)} BTC`;
+    document.getElementById('total-earned').textContent = `${total.toFixed(9)} BTC`;
+    document.getElementById('today-earned').textContent = `${today.toFixed(9)} BTC`;
+    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(9)} BTC`;
+
+    // Update Earning Time Display
+    updateEarningTimeDisplay(user);
 
     // Update wallet list
     const walletList = document.getElementById('wallet-list');
@@ -38,13 +42,14 @@ function renderDashboard() {
         user.wallets.forEach(wallet => {
             const walletEl = document.createElement('div');
             walletEl.className = 'list-group-item wallet-item';
+            walletEl.dataset.walletAddress = wallet.address;
             walletEl.innerHTML = `
                 <div class="flex-grow-1">
                     <img src="btc_icon.png" width="20" height="20" class="me-2">
                     <span class="wallet-address">${wallet.address}</span>
                 </div>
                 <div class="d-flex align-items-center">
-                    <span class="wallet-balance me-3">${wallet.balance.toFixed(8)} BTC</span>
+                    <span class="wallet-balance me-3">${wallet.balance.toFixed(9)} BTC</span>
                     <div class="wallet-actions">
                         <button class="btn btn-sm btn-info withdraw-btn" data-address="${wallet.address}" data-i18n="withdraw_btn" data-i18n-title="withdraw_btn_title">Withdraw</button>
                         <button class="btn btn-sm btn-danger delete-wallet-btn" data-address="${wallet.address}"><i class="bi bi-trash"></i></button>
@@ -106,10 +111,107 @@ function renderBalanceChart(wallets) {
     });
 }
 
+function updateEarningTimeDisplay(user) {
+    const timeLeft = user.earningTimeLeft || 0;
+    const totalTime = 6 * 60 * 60;
+    const timeLeftContainer = document.getElementById('earning-time-left-container');
+    const timeUpMessage = document.getElementById('earning-time-up-message');
+
+    if (timeLeftContainer && timeUpMessage) {
+        if (timeLeft > 0) {
+            timeLeftContainer.classList.remove('d-none');
+            timeUpMessage.classList.add('d-none');
+
+            const hours = Math.floor(timeLeft / 3600);
+            const minutes = Math.floor((timeLeft % 3600) / 60);
+            const seconds = Math.floor(timeLeft % 60);
+
+            document.getElementById('earning-time-left-text').textContent = `${hours}h ${minutes}m ${seconds}s`;
+            const progressBar = document.getElementById('earning-time-progress-bar');
+            const progressPercent = (timeLeft / totalTime) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+            progressBar.setAttribute('aria-valuenow', timeLeft);
+            progressBar.setAttribute('aria-valuemax', totalTime);
+        } else {
+            timeLeftContainer.classList.add('d-none');
+            timeUpMessage.classList.remove('d-none');
+        }
+    }
+}
+
+function updateDashboardDisplay() {
+    const user = store.getLoggedInUser();
+    if (!user) return;
+
+    // Update stats
+    const { total, today, weekly } = calculateEarnings(user);
+    document.getElementById('total-earned').textContent = `${total.toFixed(9)} BTC`;
+    document.getElementById('today-earned').textContent = `${today.toFixed(9)} BTC`;
+    document.getElementById('weekly-earned').textContent = `${weekly.toFixed(9)} BTC`;
+
+    // Update wallet balances
+    user.wallets.forEach(wallet => {
+        const walletItemEl = document.querySelector(`.wallet-item[data-wallet-address="${wallet.address}"]`);
+        if (walletItemEl) {
+            const balanceEl = walletItemEl.querySelector('.wallet-balance');
+            if(balanceEl) {
+                balanceEl.textContent = `${wallet.balance.toFixed(9)} BTC`;
+            }
+        }
+    });
+
+    // Update Earning Time Limit display
+    updateEarningTimeDisplay(user);
+
+    // Update chart
+    if(balanceChart && user.wallets.length > 0) {
+        balanceChart.data.datasets[0].data = user.wallets.map(w => w.balance);
+        balanceChart.update('none'); // 'none' for no animation
+    }
+}
+
 function renderAdminPanel() {
     renderUserList();
     renderWithdrawalRequests();
+    renderOnlineUsers();
     lang.translatePage();
+}
+
+function renderOnlineUsers() {
+    const tbody = document.getElementById('online-users-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const allUsers = store.getAllUsers();
+    const now = Date.now();
+    const TWO_MINUTES = 2 * 60 * 1000;
+
+    const onlineUsers = allUsers.filter(user => user.lastSeen && (now - user.lastSeen < TWO_MINUTES))
+        .sort((a, b) => b.lastSeen - a.lastSeen); 
+
+    if (onlineUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted" data-i18n="no_online_users">${lang.get('no_online_users')}</td></tr>`;
+        return;
+    }
+    
+    onlineUsers.forEach(user => {
+        const timeAgoSeconds = Math.round((now - user.lastSeen) / 1000);
+        let timeAgoText = '';
+        if (timeAgoSeconds < 5) {
+            timeAgoText = lang.get('just_now');
+        } else if (timeAgoSeconds < 60) {
+            timeAgoText = `${timeAgoSeconds} ${lang.get('seconds_ago')}`;
+        } else {
+            timeAgoText = lang.get('about_a_minute_ago');
+        }
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${user.email}</td>
+            <td>${user.username}</td>
+            <td>${timeAgoText}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 function renderUserList() {
@@ -126,7 +228,7 @@ function renderUserList() {
             <td>${user.email}</td>
             <td>${user.username}</td>
             <td>${user.wallets.length}</td>
-            <td>${totalBalance.toFixed(8)} BTC</td>
+            <td>${totalBalance.toFixed(9)} BTC</td>
             <td>
                 <button class="btn btn-sm btn-primary edit-user-btn" data-email="${user.email}" data-i18n="edit_btn">Edit</button>
                 <button class="btn btn-sm btn-danger delete-user-btn" data-email="${user.email}" data-i18n="delete_btn">Delete</button>
@@ -139,32 +241,49 @@ function renderUserList() {
 function renderWithdrawalRequests() {
     const tbody = document.getElementById('withdrawal-requests-tbody');
     tbody.innerHTML = '';
-    const requests = store.getWithdrawalRequests().filter(r => r.status === 'pending');
+    const requests = store.getWithdrawalRequests(); // Show all requests
+    const pendingRequests = requests.filter(r => r.status === 'pending');
     
     const pendingCountBadge = document.getElementById('pending-requests-count');
-    if (requests.length > 0) {
-        pendingCountBadge.textContent = requests.length;
+    if (pendingRequests.length > 0) {
+        pendingCountBadge.textContent = pendingRequests.length;
         pendingCountBadge.classList.remove('d-none');
     } else {
         pendingCountBadge.classList.add('d-none');
     }
 
     if (requests.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted" data-i18n="no_pending_requests">${lang.get('no_pending_requests')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted" data-i18n="no_withdrawal_requests">${lang.get('no_withdrawal_requests')}</td></tr>`;
         return;
     }
 
     requests.forEach(req => {
         const tr = document.createElement('tr');
+        
+        let statusBadge;
+        switch(req.status) {
+            case 'approved':
+                statusBadge = `<span class="badge bg-success">${lang.get('status_approved')}</span>`;
+                break;
+            case 'denied':
+                statusBadge = `<span class="badge bg-danger">${lang.get('status_denied')}</span>`;
+                break;
+            default: // pending
+                statusBadge = `<span class="badge bg-warning text-dark">${lang.get('status_pending')}</span>`;
+        }
+
+        const actions = req.status === 'pending' ? `
+            <button class="btn btn-sm btn-success approve-wr-btn" data-id="${req.id}">${lang.get('approve_btn')}</button>
+            <button class="btn btn-sm btn-danger deny-wr-btn ms-1" data-id="${req.id}">${lang.get('deny_btn')}</button>
+        ` : '—';
+
         tr.innerHTML = `
             <td>${req.userEmail}</td>
             <td class="font-monospace small">${req.walletAddress}</td>
-            <td>${req.amount.toFixed(8)} BTC</td>
+            <td>${req.amount.toFixed(9)} BTC</td>
             <td>${new Date(req.timestamp).toLocaleString()}</td>
-            <td>
-                <button class="btn btn-sm btn-success approve-wr-btn" data-id="${req.id}" data-i18n="approve_btn">Approve</button>
-                <button class="btn btn-sm btn-danger deny-wr-btn ms-1" data-id="${req.id}" data-i18n="deny_btn">Deny</button>
-            </td>
+            <td>${statusBadge}</td>
+            <td>${actions}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -208,14 +327,17 @@ function setupEventListeners() {
     document.getElementById('wallet-list').addEventListener('click', handleWalletActions);
 
     // Admin
-    document.getElementById('admin-panel-btn').addEventListener('click', () => {
-        renderAdminPanel();
-        showPage('admin-page');
+    document.getElementById('admin-panel-btn').addEventListener('click', handleAdminPanelClick);
+    document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+        showPage('dashboard-page');
     });
-    document.getElementById('back-to-dashboard-btn').addEventListener('click', () => showPage('dashboard-page'));
     document.getElementById('user-list-tbody').addEventListener('click', handleAdminUserActions);
     document.getElementById('withdrawal-requests-tbody').addEventListener('click', handleWithdrawalRequestActions);
     document.getElementById('edit-user-form').addEventListener('submit', handleEditUserSubmit);
+    
+    // Admin password modal
+    document.getElementById('admin-password-form').addEventListener('submit', handleAdminPasswordVerify);
+    document.getElementById('cancel-admin-access-btn').addEventListener('click', () => adminPasswordModal.hide());
 }
 
 function handleLogin(e) {
@@ -224,6 +346,7 @@ function handleLogin(e) {
     const password = document.getElementById('login-password').value;
 
     if (store.login(email, password)) {
+        store.updateUserActivity(email);
         initializeAppState();
     } else {
         alert(lang.get('alert_login_failed'));
@@ -329,7 +452,7 @@ function handleAdminUserActions(e) {
             document.getElementById('edit-wallet-address').value = wallet.address;
             document.getElementById('edit-user-email-display').textContent = user.email;
             document.getElementById('edit-wallet-address-display').textContent = wallet.address;
-            document.getElementById('edit-wallet-balance').value = wallet.balance.toFixed(8);
+            document.getElementById('edit-wallet-balance').value = wallet.balance.toFixed(9);
             const modal = new bootstrap.Modal(document.getElementById('edit-user-modal'));
             modal.show();
         } else {
@@ -368,15 +491,37 @@ function handleEditUserSubmit(e) {
     }
 }
 
+function handleAdminPanelClick() {
+    adminPasswordModal.show();
+}
+
+function handleAdminPasswordVerify(e) {
+    e.preventDefault();
+    const passwordInput = document.getElementById('admin-verify-password');
+    const password = passwordInput.value;
+    const user = store.getLoggedInUser();
+
+    if (user && user.password === password) {
+        adminPasswordModal.hide();
+        passwordInput.value = ''; // Clear password field
+        renderAdminPanel();
+        showPage('admin-page');
+    } else {
+        alert(lang.get('alert_admin_password_incorrect'));
+        passwordInput.select();
+    }
+}
+
 // --- Earning Mechanism ---
 function startEarningCycle() {
     setInterval(() => {
-        store.processEarnings(0.0000001);
+        store.processEarnings(0.000000001);
         const loggedInUser = store.getLoggedInUser();
         if (loggedInUser) {
+            store.updateUserActivity(loggedInUser.email);
             // Re-render dashboard only if a user is logged in and viewing it
             if (!document.getElementById('dashboard-page').classList.contains('d-none')) {
-                renderDashboard();
+                updateDashboardDisplay();
             }
         }
     }, EARNING_INTERVAL);
@@ -394,17 +539,16 @@ function initializeAppState() {
         userInfo.classList.remove('d-none');
         document.getElementById('username-display').textContent = user.username;
 
-        // Always render dashboard data for logged-in user, as admin might navigate to it
+        // Always render dashboard data for logged-in user
         renderDashboard();
-
+        
         if (user.isAdmin) {
             adminBtn.classList.remove('d-none');
-            renderAdminPanel();
-            showPage('admin-page');
         } else {
             adminBtn.classList.add('d-none');
-            showPage('dashboard-page');
         }
+        showPage('dashboard-page'); // All users land on dashboard first
+
     } else {
         showPage('login-page');
         logoutBtn.classList.add('d-none');
@@ -417,6 +561,7 @@ function initializeAppState() {
 document.addEventListener('DOMContentLoaded', async () => {
     store.init();
     await lang.init();
+    adminPasswordModal = new bootstrap.Modal(document.getElementById('admin-password-modal'));
     setupEventListeners();
     initializeAppState();
     startEarningCycle();
