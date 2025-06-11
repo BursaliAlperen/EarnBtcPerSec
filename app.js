@@ -1,80 +1,92 @@
-// app.js
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-
-// Firebase config (buraya kendi config'ini koy)
+// Firebase config bilgileri
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  // diğer config...
+  apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
+  authDomain: "earnbtcpersec.firebaseapp.com",
+  projectId: "earnbtcpersec",
+  storageBucket: "earnbtcpersec.appspot.com",
+  messagingSenderId: "923239923427",
+  appId: "1:923239923427:web:81905b081546b648b50fd6"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Firebase'i başlat
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-const logoutBtn = document.getElementById("logout-btn");
-const userInfo = document.getElementById("user-info");
-const usernameDisplay = document.getElementById("username-display");
+// DOM elemanları
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const logoutBtn = document.getElementById('logout-btn');
+const usernameDisplay = document.getElementById('username-display');
 
-loginForm.addEventListener("submit", (e) => {
+const loginPage = document.getElementById('login-page');
+const registerPage = document.getElementById('register-page');
+const dashboardPage = document.getElementById('dashboard-page');
+
+const showRegisterLink = document.getElementById('show-register');
+const showLoginLink = document.getElementById('show-login');
+
+// Sayfa geçişleri
+showRegisterLink.addEventListener('click', e => {
   e.preventDefault();
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Giriş başarılı
-      console.log("User logged in:", userCredential.user.uid);
-      loginForm.reset();
-    })
-    .catch((error) => {
-      alert("Login failed: " + error.message);
-    });
+  loginPage.classList.add('d-none');
+  registerPage.classList.remove('d-none');
 });
 
-registerForm.addEventListener("submit", (e) => {
+showLoginLink.addEventListener('click', e => {
   e.preventDefault();
-  const email = document.getElementById("register-email").value;
-  const password = document.getElementById("register-password").value;
-  const username = document.getElementById("register-username").value;
+  registerPage.classList.add('d-none');
+  loginPage.classList.remove('d-none');
+});
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Kayıt başarılı
-      console.log("User registered:", userCredential.user.uid);
+// Kayıt işlemi
+registerForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const email = registerForm['register-email'].value;
+  const password = registerForm['register-password'].value;
+  const username = registerForm['register-username'].value;
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(cred => {
+      // Kullanıcı profilini güncelle (displayName)
+      return cred.user.updateProfile({
+        displayName: username
+      });
+    })
+    .then(() => {
       registerForm.reset();
     })
-    .catch((error) => {
-      alert("Registration failed: " + error.message);
-    });
+    .catch(err => alert(err.message));
 });
 
-logoutBtn.addEventListener("click", () => {
-  signOut(auth).then(() => {
-    console.log("User logged out");
-  });
+// Giriş işlemi
+loginForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const email = loginForm['login-email'].value;
+  const password = loginForm['login-password'].value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      loginForm.reset();
+    })
+    .catch(err => alert(err.message));
 });
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // Kullanıcı giriş yapmış
-    userInfo.classList.remove("d-none");
-    logoutBtn.classList.remove("d-none");
-    usernameDisplay.textContent = user.email; // ya da user.uid istersen
-    document.getElementById("login-page").classList.add("d-none");
-    document.getElementById("register-page").classList.add("d-none");
-    document.getElementById("dashboard-page").classList.remove("d-none");
+// Çıkış işlemi
+logoutBtn.addEventListener('click', () => {
+  auth.signOut();
+});
+
+// Kullanıcı durumu değiştiğinde (login/logout)
+auth.onAuthStateChanged(user => {
+  if(user){
+    loginPage.classList.add('d-none');
+    registerPage.classList.add('d-none');
+    dashboardPage.classList.remove('d-none');
+    usernameDisplay.textContent = user.displayName || user.email;
   } else {
-    // Giriş yapılmamış
-    userInfo.classList.add("d-none");
-    logoutBtn.classList.add("d-none");
-    usernameDisplay.textContent = "";
-    document.getElementById("login-page").classList.remove("d-none");
-    document.getElementById("register-page").classList.add("d-none");
-    document.getElementById("dashboard-page").classList.add("d-none");
+    loginPage.classList.remove('d-none');
+    registerPage.classList.add('d-none');
+    dashboardPage.classList.add('d-none');
+    usernameDisplay.textContent = '';
   }
 });
