@@ -336,5 +336,50 @@
     }
     </script>
     <script type="module" src="./app.js"></script>
+</body><!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Giriş</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+</head>
+<body>
+  <h3>Giriş / Kayıt</h3>
+  <input id="email" placeholder="Email"><br>
+  <input id="password" type="password" placeholder="Şifre"><br>
+  <button onclick="giris()">Giriş</button>
+  <button onclick="kayit()">Kayıt</button>
+  <p id="durum"></p>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
+      authDomain: "earnbtcpersec.firebaseapp.com",
+      projectId: "earnbtcpersec",
+      storageBucket: "earnbtcpersec.firebasestorage.app",
+      messagingSenderId: "923239923427",
+      appId: "1:923239923427:web:81905b081546b648b50fd6"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    function giris() {
+      const e = email.value;
+      const p = password.value;
+      auth.signInWithEmailAndPassword(e, p)
+        .then(u => durum.innerText = "Giriş yapıldı: " + u.user.email)
+        .catch(e => durum.innerText = e.message);
+    }
+
+    function kayit() {
+      const e = email.value;
+      const p = password.value;
+      auth.createUserWithEmailAndPassword(e, p)
+        .then(u => durum.innerText = "Kayıt yapıldı: " + u.user.email)
+        .catch(e => durum.innerText = e.message);
+    }
+  </script>
 </body>
+    </html>
 </html>
