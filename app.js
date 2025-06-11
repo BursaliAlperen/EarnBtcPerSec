@@ -1,42 +1,23 @@
 // app.js
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getDatabase, ref, set } from "firebase/database";
 
-// Firebase config (kendi bilgilerinle değiştir)
+// Firebase SDK'dan gerekli modülleri içe aktar
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+
+// Firebase yapılandırman
 const firebaseConfig = {
   apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
-  authDomain: "923239923427.firebaseapp.com",
-  databaseURL: "https://923239923427-default-rtdb.firebaseio.com",
-  projectId: "923239923427",
-  storageBucket: "923239923427.appspot.com",
+  authDomain: "earnbtcpersec.firebaseapp.com",
+  projectId: "earnbtcpersec",
+  storageBucket: "earnbtcpersec.firebasestorage.app",
   messagingSenderId: "923239923427",
-  appId: "1:923239923427:web:81905b081546b648b50fd6"
+  appId: "1:923239923427:web:81905b081546b648b50fd6",
+  measurementId: "G-FD2BS1JHGX"
 };
 
-// Firebase’i başlat
+// Firebase'i başlat
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-// Kullanıcı verisini veritabanına yazma fonksiyonu
-function writeUserData(userId, username, email) {
-  return set(ref(db, 'users/' + userId), {
-    username,
-    email,
-    profile_picture: null
-  });
-}
-
-// Giriş yapma fonksiyonu
-export function loginUser(email, password) {
-  return signInWithEmailAndPassword(auth, email, password)
-    .then(userCredential => {
-      const user = userCredential.user;
-      const username = email.split('@')[0];
-      return writeUserData(user.uid, username, user.email);
-    });
-                                    }
+const analytics = getAnalytics(app);
 import * as store from './store.js';
 import * as lang from './lang.js';
 
