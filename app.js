@@ -1,3 +1,57 @@
+import React, { useState } from "react";
+import { auth } from "./firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+
+function App() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const register = async () => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      setMessage("Kayıt başarılı: " + userCredential.user.email);
+    } catch (error) {
+      setMessage("Kayıt hatası: " + error.message);
+    }
+  };
+
+  const login = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setMessage("Giriş başarılı: " + userCredential.user.email);
+    } catch (error) {
+      setMessage("Giriş hatası: " + error.message);
+    }
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>Kullanıcı Kayıt ve Giriş</h2>
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ display: "block", marginBottom: 10 }}
+      />
+      <input
+        type="password"
+        placeholder="Şifre"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        style={{ display: "block", marginBottom: 10 }}
+      />
+      <button onClick={register} style={{ marginRight: 10 }}>
+        Kayıt Ol
+      </button>
+      <button onClick={login}>Giriş Yap</button>
+      <p>{message}</p>
+    </div>
+  );
+}
+
+export default App;
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 const auth = getAuth();
