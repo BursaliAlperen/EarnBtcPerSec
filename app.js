@@ -1,23 +1,3 @@
-// app.js
-
-// Firebase SDK'dan gerekli modülleri içe aktar
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-
-// Firebase yapılandırman
-const firebaseConfig = {
-  apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
-  authDomain: "earnbtcpersec.firebaseapp.com",
-  projectId: "earnbtcpersec",
-  storageBucket: "earnbtcpersec.firebasestorage.app",
-  messagingSenderId: "923239923427",
-  appId: "1:923239923427:web:81905b081546b648b50fd6",
-  measurementId: "G-FD2BS1JHGX"
-};
-
-// Firebase'i başlat
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 import * as store from './store.js';
 import * as lang from './lang.js';
 
