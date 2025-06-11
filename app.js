@@ -1,3 +1,133 @@
+// Firebase yapılandırma bilgileri
+const firebaseConfig = {
+  apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
+  authDomain: "earnbtcpersec.firebaseapp.com",
+  projectId: "earnbtcpersec",
+  storageBucket: "earnbtcpersec.appspot.com",
+  messagingSenderId: "923239923427",
+  appId: "1:923239923427:web:81905b081546b648b50fd6"
+};
+
+// Firebase başlatma
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// DOM elemanları
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+const logoutBtn = document.getElementById('logout-btn');
+const usernameDisplay = document.getElementById('username-display');
+
+const loginPage = document.getElementById('login-page');
+const registerPage = document.getElementById('register-page');
+const dashboardPage = document.getElementById('dashboard-page');
+
+const showRegisterLink = document.getElementById('show-register');
+const showLoginLink = document.getElementById('show-login');
+
+// Sayfa geçişleri
+showRegisterLink.addEventListener('click', e => {
+  e.preventDefault();
+  loginPage.classList.add('d-none');
+  registerPage.classList.remove('d-none');
+});
+
+showLoginLink.addEventListener('click', e => {
+  e.preventDefault();
+  registerPage.classList.add('d-none');
+  loginPage.classList.remove('d-none');
+});
+
+// Kayıt işlemi
+registerForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const email = registerForm['register-email'].value;
+  const password = registerForm['register-password'].value;
+  const username = registerForm['register-username'].value;
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(cred => {
+      return cred.user.updateProfile({ displayName: username });
+    })
+    .then(() => {
+      registerForm.reset();
+      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
+      registerPage.classList.add('d-none');
+      loginPage.classList.remove('d-none');
+    })
+    .catch(err => alert(err.message));
+});
+
+// Giriş işlemi
+loginForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const email = loginForm['login-email'].value;
+  const password = loginForm['login-password'].value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      loginForm.reset();
+    })
+    .catch(err => alert(err.message));
+});
+
+// Çıkış işlemi
+logoutBtn.addEventListener('click', () => {
+  auth.signOut();
+});
+
+// Firestore'a BTC verisi kaydetme fonksiyonu
+function saveBtcDataToFirestore(userId, btcValue) {
+  db.collection('users').doc(userId).collection('btcData').add({
+    btcValue: btcValue,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  })
+  .then(() => {
+    console.log('BTC verisi Firestore\'a kaydedildi.');
+  })
+  .catch(err => {
+    console.error('Firestore kaydetme hatası:', err);
+  });
+}
+
+// Örnek BTC verisi alma (burayı kendi kaynağına göre değiştir)
+function getBtcValueFromYourSource() {
+  return (30000 + Math.random() * 1000).toFixed(2);
+}
+
+let btcInterval = null;
+
+// Kullanıcı durumu değiştiğinde
+auth.onAuthStateChanged(user => {
+  if (user) {
+    // Giriş yapan kullanıcı için arayüz
+    loginPage.classList.add('d-none');
+    registerPage.classList.add('d-none');
+    dashboardPage.classList.remove('d-none');
+    usernameDisplay.textContent = user.displayName || user.email;
+
+    // Her saniye BTC verisini kaydet
+    if (btcInterval) clearInterval(btcInterval);
+    btcInterval = setInterval(() => {
+      const btcValue = getBtcValueFromYourSource();
+      saveBtcDataToFirestore(user.uid, btcValue);
+    }, 1000);
+
+  } else {
+    // Çıkış yapan kullanıcı için arayüz
+    loginPage.classList.remove('d-none');
+    registerPage.classList.add('d-none');
+    dashboardPage.classList.add('d-none');
+    usernameDisplay.textContent = '';
+
+    if (btcInterval) {
+      clearInterval(btcInterval);
+      btcInterval = null;
+    }
+  }
+});
 import * as store from './store.js';
 import * as lang from './lang.js';
 
