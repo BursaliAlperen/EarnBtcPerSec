@@ -1,3 +1,16 @@
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+
+const auth = getAuth();
+
+signInWithEmailAndPassword(auth, email, password)
+  .then((userCredential) => {
+    // Giriş başarılı
+    const user = userCredential.user;
+    console.log("Giriş başarılı:", user.email);
+  })
+  .catch((error) => {
+    console.error("Giriş hatası:", error.message);
+  });
 import React, { useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
