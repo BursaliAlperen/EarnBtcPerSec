@@ -140,7 +140,6 @@ const firebaseConfig = {
 };
 
 // Firebase'i başlat
-firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
 // DOM elemanları
