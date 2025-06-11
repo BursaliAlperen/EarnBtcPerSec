@@ -1,3 +1,66 @@
+// 1. Firebase SDK importları (modül olarak)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// 2. Firebase config - kendi projenin bilgileriyle değiştir
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+
+// 3. Firebase başlat
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// 4. Login formu event listener'ı
+const loginForm = document.getElementById('login-form');
+loginForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const email = loginForm['login-email'].value;
+  const password = loginForm['login-password'].value;
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(userCredential => {
+      console.log('User logged in:', userCredential.user);
+      // Burada kullanıcı dashboard'una yönlendirme yapabilirsin
+    })
+    .catch(error => {
+      alert('Login failed: ' + error.message);
+    });
+});
+
+// 5. Auth state listener (kullanıcı oturumunu takip et)
+onAuthStateChanged(auth, user => {
+  if (user) {
+    console.log('User is logged in:', user.email);
+    // Dashboard'u göster veya yükle
+  } else {
+    console.log('User logged out');
+    // Login sayfasını göster
+  }
+});
+
+// 6. Veri kaydetme örneği
+function saveUserData(userId, data) {
+  set(ref(db, 'users/' + userId), data)
+    .then(() => console.log('User data saved'))
+    .catch(err => console.error('Save error:', err));
+}
+
+// 7. Logout işlemi
+const logoutBtn = document.getElementById('logout-btn');
+logoutBtn.addEventListener('click', () => {
+  signOut(auth)
+    .then(() => console.log('Signed out'))
+    .catch(err => console.error('Sign out error:', err));
+});
 import * as store from './store.js';
 import * as lang from './lang.js';
 
