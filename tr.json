@@ -51,9 +51,8 @@
     "alert_user_no_wallets": "Kullanıcının düzenlenecek cüzdanı yok.",
     "referral_code_label": "Referans Kodu (İsteğe bağlı)",
     "referral_code_placeholder": "Arkadaşınızdan gelen kodu girin",
-    "your_referral_code": "Referans Linkiniz",
-    "share_referral_code": "Bu linki arkadaşlarınızla paylaşın. Referans kodunuz otomatik olarak kullanılacaktır!",
-    "referral_earning_info": "Davet ettiğiniz her kullanıcının kazancından %5 komisyon kazanırsınız!",
+    "your_referral_code": "Sizin Referans Kodunuz",
+    "share_referral_code": "Bu kodu arkadaşlarınızla paylaşın ve her kayıt için bonus kazanın!",
     "alert_withdraw_request_submitted": "Para çekme talebiniz inceleme için gönderildi.",
     "withdrawal_requests": "Para Çekme Talepleri",
     "admin_wr_user": "Kullanıcı",
@@ -81,14 +80,5 @@
     "no_online_users": "Şu anda çevrimiçi kullanıcı yok.",
     "seconds_ago": "saniye önce",
     "just_now": "Az önce",
-    "about_a_minute_ago": "Yaklaşık bir dakika önce",
-    "leaderboard_top_earners": "En Çok Kazananlar",
-    "leaderboard_top_withdrawers": "En Çok Çekim Yapanlar",
-    "no_earners_yet": "Henüz kazanan yok.",
-    "no_withdrawals_yet": "Henüz para çekme işlemi yok.",
-    "leaderboard_top_referrers": "Haftanın Referansçıları",
-    "no_referrers_yet": "Bu hafta referans yok.",
-    "referrals_badge": "davet",
-    "weekly_prize_timer_prefix": "Sonraki ödül:",
-    "weekly_prize_awarding": "Ödüller veriliyor..."
+    "about_a_minute_ago": "Yaklaşık bir dakika önce"
 }

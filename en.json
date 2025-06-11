@@ -51,9 +51,8 @@
     "alert_user_no_wallets": "User has no wallets to edit.",
     "referral_code_label": "Referral Code (Optional)",
     "referral_code_placeholder": "Enter code from a friend",
-    "your_referral_code": "Your Referral Link",
-    "share_referral_code": "Share this link with your friends. They'll use your referral code automatically!",
-    "referral_earning_info": "You earn a 5% commission from the earnings of every user you refer!",
+    "your_referral_code": "Your Referral Code",
+    "share_referral_code": "Share this code with your friends and get a bonus for each signup!",
     "alert_withdraw_request_submitted": "Your withdrawal request has been submitted for review.",
     "withdrawal_requests": "Withdrawal Requests",
     "admin_wr_user": "User",
@@ -81,14 +80,5 @@
     "no_online_users": "No users currently online.",
     "seconds_ago": "seconds ago",
     "just_now": "Just now",
-    "about_a_minute_ago": "About a minute ago",
-    "leaderboard_top_earners": "Top Earners",
-    "leaderboard_top_withdrawers": "Top Withdrawers",
-    "no_earners_yet": "No earners yet.",
-    "no_withdrawals_yet": "No withdrawals yet.",
-    "leaderboard_top_referrers": "Top Referrers (Weekly)",
-    "no_referrers_yet": "No referrals this week.",
-    "referrals_badge": "referrals",
-    "weekly_prize_timer_prefix": "Next prize in",
-    "weekly_prize_awarding": "Awarding prizes..."
+    "about_a_minute_ago": "About a minute ago"
 }
