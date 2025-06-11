@@ -1,13 +1,41 @@
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD35fhSe9gdyESPY8-6Pmn2mQZlj94z2XE",
-  authDomain: "earnbtcpersec.firebaseapp.com",
-  projectId: "earnbtcpersec",
-  storageBucket: "earnbtcpersec.firebasestorage.app",
-  messagingSenderId: "923239923427",
-  appId: "1:923239923427:web:81905b081546b648b50fd6",
-  measurementId: "G-FD2BS1JHGX"
-};
+import React, { useState } from "react";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
+
+function App() {
+  const [mesaj, setMesaj] = useState("");
+
+  const veriKaydet = async () => {
+    const veri = {
+      mesaj,
+      tarih: new Date()
+    };
+
+    try {
+      await setDoc(doc(db, "uygulamaVerileri", "veri1"), veri);
+      alert("Veri başarıyla kaydedildi!");
+    } catch (error) {
+      alert("Kaydetme hatası: " + error.message);
+    }
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>Firebase Firestore Veri Kaydet</h1>
+      <input
+        type="text"
+        placeholder="Bir mesaj yaz..."
+        value={mesaj}
+        onChange={(e) => setMesaj(e.target.value)}
+      />
+      <button onClick={veriKaydet} style={{ marginLeft: 10 }}>
+        Kaydet
+      </button>
+    </div>
+  );
+}
+
+export default App;
 import * as store from './store.js';
 import * as lang from './lang.js';
 
