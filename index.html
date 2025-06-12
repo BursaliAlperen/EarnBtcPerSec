@@ -1,4 +1,40 @@
 <html lang="en">
+    <!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Earn BTC Per Sec</title>
+  </head>
+  <body>
+    <h1>Earn BTC</h1>
+
+    <!-- Login Alanı -->
+    <div>
+      <input type="text" id="login-email" placeholder="Email" />
+      <input type="password" id="login-password" placeholder="Şifre" />
+      <button onclick="handleLogin()">Giriş Yap</button>
+    </div>
+
+    <!-- Kayıt Alanı -->
+    <div>
+      <input type="text" id="register-username" placeholder="Kullanıcı Adı" />
+      <input type="text" id="register-email" placeholder="Email" />
+      <input type="password" id="register-password" placeholder="Şifre" />
+      <button onclick="handleRegister(event)">Kayıt Ol</button>
+    </div>
+
+    <!-- Kullanıcıya özel alan -->
+    <div id="game-area" style="display:none;">
+      <p>Merhaba <span id="username"></span>!</p>
+      <p>Bakiye: <span id="balance">0</span> BTC</p>
+      <button onclick="earn()">BTC Kazan</button>
+    </div>
+
+    <!-- Scriptleri çağır -->
+    <script src="store.js"></script>
+    <script src="app.js"></script>
+  </body>
+    </html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
