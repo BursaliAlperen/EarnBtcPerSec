@@ -1,3 +1,46 @@
+const store = {
+  getUsers: () => JSON.parse(localStorage.getItem("users") || "[]"),
+
+  addUser: (user) => {
+    const users = store.getUsers();
+    users.push(user);
+    localStorage.setItem("users", JSON.stringify(users));
+  },
+
+  getLoggedInUser: () => {
+    return JSON.parse(localStorage.getItem("loggedInUser") || "null");
+  },
+
+  login: (email, password) => {
+    const users = store.getUsers();
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+      return user;
+    }
+    return null;
+  },
+
+  logout: () => {
+    localStorage.removeItem("loggedInUser");
+  },
+
+  updateBalance: (amount) => {
+    const user = store.getLoggedInUser();
+    if (user) {
+      user.balance = (user.balance || 0) + amount;
+      store._updateUser(user);
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+    }
+  },
+
+  _updateUser: (updatedUser) => {
+    const users = store.getUsers().map(user =>
+      user.email === updatedUser.email ? updatedUser : user
+    );
+    localStorage.setItem("users", JSON.stringify(users));
+  }
+};
 let DB = {};
 const DB_KEY = 'earnBtcPerSecDB';
 let saveTimeout = null;
