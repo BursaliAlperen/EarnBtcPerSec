@@ -1,3 +1,42 @@
+function handleRegister(event) {
+  event.preventDefault();
+  const username = document.getElementById("register-username").value;
+  const email = document.getElementById("register-email").value;
+  const password = document.getElementById("register-password").value;
+
+  if (!email || !password || !username) {
+    alert("Tüm alanları doldurun.");
+    return;
+  }
+
+  const user = { username, email, password, balance: 0 };
+  store.addUser(user);
+  alert("Kayıt başarılı! Giriş yapabilirsiniz.");
+}
+
+function handleLogin() {
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  const user = store.login(email, password);
+  if (user) {
+    initializeAppState(user);
+  } else {
+    alert("Geçersiz email veya şifre.");
+  }
+}
+
+function initializeAppState(user) {
+  document.getElementById("game-area").style.display = "block";
+  document.getElementById("username").textContent = user.username;
+  document.getElementById("balance").textContent = user.balance || 0;
+}
+
+function earn() {
+  store.updateBalance(1);
+  const user = store.getLoggedInUser();
+  document.getElementById("balance").textContent = user.balance;
+}
 import * as store from './store.js';
 import * as lang from './lang.js';
 
